@@ -8,7 +8,6 @@
 <div class="container">
     {% if request.user.is_authenticated %}
         Welcome, {{ request.user.username }}
-        <a href="{% url 'meeting:create' %}">Create Meeting</a>
     {% else %}
         Not authenticated yet
     {% endif %}
