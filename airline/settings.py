@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-5g+n5t$jgoyg!kg@e$a^ci#c%fzus5dagqk3ju5h7+#fmkq-v$
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*', ]
 
 # Bootstrap
 MESSAGE_TAGS = {
