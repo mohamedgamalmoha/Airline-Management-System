@@ -1,10 +1,12 @@
-from django.contrib.auth.models import UserManager
+from django.db import models
 
 
-class CustomUserManagers(UserManager):
+class CustomerManager(models.Manager):
 
-    def get_customer_by_username(self, username):
-        return self.get(username=username, is_staff=False)
+    def get_customer_by_username(self, username: str):
+        return self.get(user__username=username)
 
-    def get_user_by_username(self, username):
-        return self.get(username=username, is_staff=True)
+
+class UserManager(models.Manager):
+    def get_user_by_username(self, username: str):
+        return self.get(username=username)

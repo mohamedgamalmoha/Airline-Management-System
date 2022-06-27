@@ -1,32 +1,15 @@
 from django.db import models
 from django.utils.text import slugify
 from django.core.validators import RegexValidator
-from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.contrib.auth.password_validation import (MinimumLengthValidator, CommonPasswordValidator,
                                                      NumericPasswordValidator)
 
-from .managers import CustomUserManagers
+from .managers import UserManager, CustomerManager
 
 
 PhoneNumberValidator = RegexValidator(r'^[0-9]{10}$', 'Invalid Phone Number')
 CreditCardValidator = RegexValidator(r'^[0-9]{15, 16}$', 'Invalid Credit Card')
-
-
-class CustomUser(AbstractUser):
-    address = models.CharField(max_length=200)
-    phone_number = models.CharField(max_length=11, validators=[PhoneNumberValidator, ])
-    credit_card = models.CharField(max_length=16, validators=[CreditCardValidator, ])
-
-    objects = CustomUserManagers()
-
-    @property
-    def is_customer(self):
-        return not self.is_staff
-
-    @property
-    def is_admin(self):
-        return self.is_staff
 
 
 class UserRole(models.Model):
@@ -55,6 +38,8 @@ class User(models.Model):
     email = models.EmailField("Email Address", blank=True)
     role = models.ForeignKey(UserRole, on_delete=models.SET_NULL, null=True)
 
+    objects = UserManager()
+
     def __str__(self):
         return self.username
 
@@ -66,6 +51,8 @@ class Customer(models.Model):
     address = models.CharField("Address", max_length=150, blank=True)
     phone_number = models.CharField(max_length=11, validators=[PhoneNumberValidator, ])
     credit_card = models.CharField(max_length=16, validators=[CreditCardValidator, ])
+
+    objects = CustomerManager()
 
     def __str__(self):
         return self.user.username

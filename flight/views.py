@@ -10,14 +10,10 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 
+from accounts.models import Customer
 from .forms import UpdateAirlineForm
 from .models import Flight, Company, Country, Ticket
 from .serializers import UpdateAirlineSerializer, AddFlightSerializer, AddTicketSerializer
-
-
-# Transfer to customer app
-#  create_new_user ( user ) - for internal usage
-#  update_customer
 
 
 # Serializing Data As Json
@@ -41,6 +37,8 @@ def serialize_model_obj(obj):
 # - get_airline_by_parameters
 # - get_all_countries
 # - get_country_by_id
+# - create_new_user
+
 
 def get_all_flight(request):
     data = serialize_queryset(Flight.objects.all().values())
@@ -88,6 +86,11 @@ def get_country_by_id(request, country_id):
     obj = get_object_or_404(Country, id=country_id)
     data = serialize_model_obj(obj)
     return JsonResponse(data, safe=False)
+
+
+def create_new_user(user: dict):
+    obj, created_user = Customer.objects.update_or_create(**user, defaults={'role': ''})
+    return obj, created_user
 
 
 # Customer Facade
@@ -161,4 +164,3 @@ def add_flight(request, flight_id):
 # - remove_airline (airline)
 # - remove_customer (customer)
 # - remove_administrator (administrator)
-# conda install -c anaconda jupyter

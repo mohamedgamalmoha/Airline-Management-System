@@ -6,13 +6,13 @@ from django.utils import timezone
 
 class CompanyManager(models.Manager):
 
-    def get_airline_by_username(self, username):
+    def get_airline_by_username(self, username: str):
         return self.filter(manager__uername=username)
 
-    def ge_airlines_by_country(self, country_id):
+    def ge_airlines_by_country(self, country_id: int):
         return self.filter(country__id=country_id)
 
-    def get_airline_by_parameters(self, country_name):
+    def get_airline_by_parameters(self, country_name: str):
         return self.filter(name__icontains=country_name)
 
 
@@ -40,10 +40,10 @@ class FlightManager(models.Manager):
     def get_flights_by_destination_country_id(self, country_id: int):
         return self.filter(destination__id=country_id)
 
-    def get_flights_by_departure_date(self, date):
+    def get_flights_by_departure_date(self, date: datetime):
         return self.filter(departure_time__date=date)
 
-    def get_flights_by_landing_date(self, date):
+    def get_flights_by_landing_date(self, date: datetime):
         return self.filter(landing_time__date=date)
 
     def get_flights_by_customer(self, customer):

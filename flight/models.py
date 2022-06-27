@@ -1,12 +1,9 @@
 from django.db import models
 from django.urls import reverse
-from django.contrib.auth.backends import get_user_model
 from django.core.validators import ValidationError, MinValueValidator
 
+from accounts.models import User, Customer
 from .managers import CompanyManager, FlightManager, TicketsManager
-
-
-User = get_user_model()
 
 
 class Country(models.Model):
@@ -88,7 +85,7 @@ class Flight(models.Model):
 
 class Ticket(models.Model):
     flight = models.ForeignKey(Flight, on_delete=models.SET_NULL, null=True)
-    customer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True)
 
     objects = TicketsManager()
 
