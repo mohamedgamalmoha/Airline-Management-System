@@ -1,19 +1,14 @@
 import json
 from datetime import datetime
 
-from django.http.response import JsonResponse
 from django.forms.models import model_to_dict
 from django.shortcuts import get_object_or_404
 from django.core.serializers.json import DjangoJSONEncoder
+from django.http.response import JsonResponse, HttpResponseForbidden
 
-from rest_framework import status
-from rest_framework.response import Response
-from rest_framework.decorators import api_view
-
-from accounts.models import Customer
-from .forms import UpdateAirlineForm
+from .decorators import auth_view
 from .models import Flight, Company, Country, Ticket
-from .serializers import UpdateAirlineSerializer, AddFlightSerializer, AddTicketSerializer
+from accounts.models import Customer, User, Administrator
 
 
 # Serializing Data As Json
@@ -39,8 +34,7 @@ def serialize_model_obj(obj):
 # - get_country_by_id
 # - create_new_user
 
-
-def get_all_flight(request):
+def get_all_flights(request):
     data = serialize_queryset(Flight.objects.all().values())
     return JsonResponse(data, safe=False)
 
@@ -51,7 +45,7 @@ def get_flight_by_id(request, flight_id):
     return JsonResponse(data, safe=False)
 
 
-def get_flights_by_parameters(request, origin_country_id, destination_country_id, date):
+def get_flights_by_parameters(request, origin_country_id: int, destination_country_id: int, date: str):
     d, m, y = date.split('-')
     objects = Flight.objects.get_flights_by_parameters(int(origin_country_id),
                                                        int(destination_country_id),
@@ -65,13 +59,13 @@ def get_all_airlines(response):
     return JsonResponse(data, safe=False)
 
 
-def get_airline_by_id(request, airline_id):
+def get_airline_by_id(request, airline_id: int):
     obj = get_object_or_404(Company, id=airline_id)
     data = serialize_model_obj(obj)
     return JsonResponse(data, safe=False)
 
 
-def get_airline_by_parameters(request, country_name):
+def get_airline_by_parameters(request, country_name: str):
     objects = Company.objects.get_airline_by_parameters(country_name).values()
     data = serialize_queryset(objects)
     return JsonResponse(data, safe=False)
@@ -82,7 +76,7 @@ def get_all_countries(request):
     return JsonResponse(data, safe=False)
 
 
-def get_country_by_id(request, country_id):
+def get_country_by_id(request, country_id: int):
     obj = get_object_or_404(Country, id=country_id)
     data = serialize_model_obj(obj)
     return JsonResponse(data, safe=False)
@@ -94,38 +88,42 @@ def create_new_user(user: dict):
 
 
 # Customer Facade
-# - update_customer (customer)  ## change to customer app
-# - add_ticket (ticket)         ## modify
-# - remove_ticket (ticket)      ## modify
+# - update_customer (customer)
+# - add_ticket (ticket)
+# - remove_ticket (ticket)
 # - get_my_tickets ()
 
-# def add_ticket(request, flight_id):
-#     obj, created = Ticket.objects.get_or_create(customer=request.user, flight__id=flight_id)
-#     ticket = serialize_model_obj(obj)
-#     return JsonResponse(ticket, safe=False)
+@auth_view(method='POST')
+def update_customer(request, customer: int):
+    cus = get_object_or_404(Customer, id=customer)
+    cus.first_name = request.POST.get('first_name', cus.first_name)
+    cus.last_name = request.POST.get('last_name', cus.last_name)
+    cus.address = request.POST.get('address', cus.address)
+    cus.phone_number = request.POST.get('phone_number', cus.phone_number)
+    cus.credit_card = request.POST.get('credit_card', cus.phone_number)
+    cus.save()
+    return JsonResponse({'message': 'Customer has been updated Successfully'})
 
 
-@api_view(['POST'])
+@auth_view(method='POST')
 def add_ticket(request):
-    ticket = AddTicketSerializer(data=request.data)
-
-    if ticket.is_valid():
-        ticket.instance.customer = request.user
-        ticket.save()
-        return Response(ticket.data)
-
-    return Response(status=status.HTTP_404_NOT_FOUND)
+    ticket = Ticket()
+    ticket.flight = get_object_or_404(Flight, id=int(request.POST.get('flight')))
+    ticket.customer = get_object_or_404(Customer, id=int(request.POST.get('customer')))
+    ticket.save()
+    return JsonResponse({'message': 'Ticket has been created Successfully'})
 
 
-def remove_ticket(request, ticket_id):
+@auth_view(method='POST')
+def remove_ticket(request, ticket_id: int):
     obj = get_object_or_404(Ticket, id=ticket_id)
-    data = serialize_model_obj(obj)
     obj.delete()
-    return JsonResponse(data, safe=False)
+    return JsonResponse({'message': 'Ticket has been deleted Successfully'})
 
 
+@auth_view(method='GET')
 def get_my_tickets(request):
-    tickets = Ticket.objects.filter(customer=request.user)
+    tickets = Ticket.objects.filter(customer__user__username=request.GET.get('username'))
     data = serialize_queryset(tickets.values())
     return JsonResponse(data, safe=False)
 
@@ -137,23 +135,60 @@ def get_my_tickets(request):
 # - update_flight (flight)
 # - remove_flight (flight)
 
+@auth_view(method='GET')
 def get_my_flights(request):
-    flights = Flight.objects.filter(company__manager=request.user)
+    flights = Flight.objects.filter(company__manager__username=request.GET.get('username'))
     data = serialize_queryset(flights.values())
     return JsonResponse(data, safe=False)
 
 
-def update_airline(request, company_id):
-    obj = get_object_or_404(Company, id=company_id)
-    form = UpdateAirlineForm(request.POST, instance=obj)
-    if form.is_valid():
-        form.save()
-        return JsonResponse({'is_updated': True}, safe=False, status=200)
-    return JsonResponse({'is_updated': True}, safe=False, status=200)
+@auth_view(method='POST')
+def update_airline(request, airline: int):
+    obj = get_object_or_404(Company, id=airline)
+    if obj.manager.username != request.POST.get('username'):
+        return HttpResponseForbidden('You are not the owner of this company')
+    obj.name = request.POST.get('name', obj.name)
+    obj.country = get_object_or_404(Country, id=int(request.POST.get('country', obj.country.id)))
+    obj.save()
+    return JsonResponse({'message': 'Airline Company Has Updated Successfully'}, safe=False)
 
 
-def add_flight(request, flight_id):
-    pass
+@auth_view(method='POST')
+def add_flight(request):
+    customer = get_object_or_404(User, username=request.POST.get('username'))
+    flight = Flight()
+    flight.company = customer.manager
+    flight.origin = get_object_or_404(Country, id=int(request.POST.get('origin')))
+    flight.destination = get_object_or_404(Country, id=int(request.POST.get('destination')))
+    flight.departure_time = datetime.fromisoformat(request.POST.get('departure_time'))
+    flight.landing_time = datetime.fromisoformat(request.POST.get('landing_time'))
+    flight.num_of_tickets = request.POST.get('num_of_tickets', 10)
+    flight.save()
+    return JsonResponse({'message': 'Airline Company Has Updated Successfully'}, safe=False)
+
+
+@auth_view(method='POST')
+def update_flight(request, flight: int):
+    user = get_object_or_404(User, username=request.POST.get('username'))
+    flight = get_object_or_404(Flight, id=flight)
+    if flight.company.manager != user:
+        return HttpResponseForbidden('Your company is not the owner of this flight')
+    flight.origin = get_object_or_404(Country, id=int(request.POST.get('origin', flight.origin.id)))
+    flight.destination = get_object_or_404(Country, id=int(request.POST.get('destination', flight.destination.id)))
+    flight.departure_time = datetime.fromisoformat(request.POST.get('departure_time', str(flight.departure_time)))
+    flight.landing_time = datetime.fromisoformat(request.POST.get('landing_time', str(flight.landing_time)))
+    flight.save()
+    return JsonResponse({'message': 'Flight Has Updated Successfully'}, safe=False)
+
+
+@auth_view(method='POST')
+def remove_flight(request, flight: int):
+    user = get_object_or_404(User, username=request.POST.get('username'))
+    obj = get_object_or_404(Flight, id=flight)
+    if obj.company.manager != user:
+        return HttpResponseForbidden('Your company is not the owner of this flight')
+    obj.delete()
+    return JsonResponse({'message': 'Flight has been deleted Successfully'})
 
 
 # Admin Facade
@@ -164,3 +199,61 @@ def add_flight(request, flight_id):
 # - remove_airline (airline)
 # - remove_customer (customer)
 # - remove_administrator (administrator)
+
+@auth_view(method='GET', allow_admin_only=True)
+def get_all_customers(request):
+    data = serialize_queryset(Customer.objects.all().values())
+    return JsonResponse(data, safe=False)
+
+
+@auth_view(method='POST', allow_admin_only=True)
+def add_airline(request):
+    airline = Company()
+    airline.name = request.POST.get('name')
+    airline.manager = get_object_or_404(User, username=request.POST.get('manger'))
+    airline.country = get_object_or_404(Country, id=request.POST.get('country'))
+    airline.save()
+    return JsonResponse({'message': 'Airline Has Been Added Successfully'}, safe=False)
+
+
+@auth_view(method='POST', allow_admin_only=True)
+def add_customer(request):
+    customer = Customer()
+    customer.user = get_object_or_404(User, username=request.POST.get('user'))
+    customer.first_name = request.POST.get('first_name')
+    customer.last_name = request.POST.get('last_name')
+    customer.address = request.POST.get('address')
+    customer.phone_number = request.POST.get('phone_number')
+    customer.credit_card = request.POST.get('credit_card')
+    customer.save()
+    return JsonResponse({'message': 'Customer Has Been Added Successfully'}, safe=False)
+
+
+@auth_view(method='POST', allow_admin_only=True)
+def add_administrator(request):
+    administrator = Administrator()
+    administrator.user = get_object_or_404(User, username=request.POST.get('user'))
+    administrator.first_name = request.POST.get('first_name')
+    administrator.last_name = request.POST.get('last_name')
+    return JsonResponse({'message': 'Administrator Has Been Added Successfully'}, safe=False)
+
+
+@auth_view(method='POST', allow_admin_only=True)
+def remove_airline(request, airline: int):
+    obj = get_object_or_404(Company, id=airline)
+    obj.delete()
+    return JsonResponse({'message': 'Airline has been deleted Successfully'})
+
+
+@auth_view(method='POST', allow_admin_only=True)
+def remove_customer(request, customer: int):
+    obj = get_object_or_404(Customer, id=customer)
+    obj.delete()
+    return JsonResponse({'message': 'Customer has been deleted Successfully'})
+
+
+@auth_view(method='POST', allow_admin_only=True)
+def remove_administrator(request, administrator: int):
+    obj = get_object_or_404(Administrator, id=administrator)
+    obj.delete()
+    return JsonResponse({'message': 'Administrator has been deleted Successfully'})

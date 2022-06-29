@@ -1,15 +1,30 @@
 from django.db import models
 from django.utils.text import slugify
-from django.core.validators import RegexValidator
+from django.core.exceptions import ValidationError
 from django.contrib.auth.validators import UnicodeUsernameValidator
-from django.contrib.auth.password_validation import (MinimumLengthValidator, CommonPasswordValidator,
-                                                     NumericPasswordValidator)
+from django.core.validators import RegexValidator, MinLengthValidator
 
 from .managers import UserManager, CustomerManager
 
 
 PhoneNumberValidator = RegexValidator(r'^[0-9]{10}$', 'Invalid Phone Number')
-CreditCardValidator = RegexValidator(r'^[0-9]{15, 16}$', 'Invalid Credit Card')
+CreditCardValidator = RegexValidator(r'^[0-9]{15}$', 'Invalid Credit Card')
+
+
+class NumericValidator:
+    def __init__(self, password):
+        self.password = password
+        self.validate(password)
+
+    def validate(self, password, user=None):
+        if password.strip().isnumeric():
+            raise ValidationError(
+                self.get_help_text(),
+                code='password_is_numeric',
+            )
+
+    def get_help_text(self):
+        return f"Your password should not contain only numeric values"
 
 
 class UserRole(models.Model):
@@ -33,8 +48,8 @@ class User(models.Model):
             "unique": "A user with that username already exists.",
         },
     )
-    password = models.CharField("Password", max_length=128, validators=[MinimumLengthValidator, CommonPasswordValidator,
-                                                                        NumericPasswordValidator])
+    password = models.CharField("Password", max_length=128, validators=[NumericValidator,
+                                                                        MinLengthValidator(6)])
     email = models.EmailField("Email Address", blank=True)
     role = models.ForeignKey(UserRole, on_delete=models.SET_NULL, null=True)
 

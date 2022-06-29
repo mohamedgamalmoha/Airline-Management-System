@@ -26,7 +26,7 @@ class Country(models.Model):
 class Company(models.Model):
     name = models.CharField(max_length=200)
     country = models.ForeignKey(Country,  on_delete=models.SET_NULL, null=True)
-    manager = models.OneToOneField(User, on_delete=models.SET_NULL, null=True, unique=True)
+    manager = models.OneToOneField(User, on_delete=models.SET_NULL, null=True, unique=True, related_name='manager')
 
     objects = CompanyManager()
 
