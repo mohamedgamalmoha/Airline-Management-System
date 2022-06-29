@@ -1,3 +1,6 @@
+import os
+import binascii
+
 from django.db import models
 from django.utils.text import slugify
 from django.core.exceptions import ValidationError
@@ -79,4 +82,29 @@ class Administrator(models.Model):
     last_name = models.CharField("Last Name", max_length=150, blank=True)
 
     def __str__(self):
+        return self.user.username
+
+
+class Token(models.Model):
+    user = models.OneToOneField(
+        User, related_name='auth_token',
+        on_delete=models.CASCADE, verbose_name="User"
+    )
+    name = models.CharField("Key", max_length=40, blank=True)
+    created = models.DateTimeField("Created", auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if not self.name:
+            self.name = self.generate_key()
+        return super().save(*args, **kwargs)
+
+    @classmethod
+    def generate_key(cls):
+        return binascii.hexlify(os.urandom(20)).decode()
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def username(self):
         return self.user.username

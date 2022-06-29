@@ -3,7 +3,7 @@ from functools import wraps, partial
 
 from django.http.response import HttpResponseBadRequest
 
-from accounts.models import User, Administrator
+from accounts.models import User, Administrator, Token
 
 
 VALID_HTTP_METHODS = ('GET', 'POST', 'PUT', 'DELETE')
@@ -21,6 +21,13 @@ def login(username, password):
     user = User.objects.filter(username=username, password=password)
     if user.exists():
         return user.first()
+    return None
+
+
+def login_with_token(token_name: str):
+    token = Token.objects.filter(name=token_name)
+    if token.exists():
+        return token.user
     return None
 
 
@@ -44,11 +51,11 @@ def auth_view(view_func: Callable = None, method: str = None, messages: dict = N
             return HttpResponseBadRequest(messages.get('incorrect_http_method').format(method))
 
         if method == 'POST':
-            username, password = request.POST.get('username'), request.POST.get('password')
+            token_name = request.POST.get('token')
         else:
-            username, password = request.GET.get('username'), request.GET.get('password')
+            token_name = request.GET.get('token')
 
-        user = login(username, password)
+        user = login_with_token(token_name)
         if user:
             if allow_admin_only:
                 admin = Administrator.objects.filter(user=user)

@@ -1,11 +1,13 @@
 from django.urls import reverse_lazy
-from django.http import HttpResponseRedirect
+from django.shortcuts import get_object_or_404
 from django.views.generic import CreateView, UpdateView
+from django.http import HttpResponseRedirect, JsonResponse
 from django.contrib.auth import login
 from django.contrib.auth.backends import get_user_model
 from django.contrib.auth.views import LoginView, LogoutView
 from django.contrib.messages.views import SuccessMessageMixin
 
+from .models import Token
 from .forms import RegistrationForm
 
 
@@ -36,3 +38,9 @@ class LogOutView(SuccessMessageMixin, LogoutView):
     template_name = 'accounts/auth/logout.html'
     success_message = 'Logged out successfully '
     success_url = reverse_lazy(URL_REDIRECT)
+
+
+def get_user_token(request):
+    username, password = request.GET.get('username'), request.GET.get('password')
+    token = get_object_or_404(Token, user__username=username, user__passowrd=password)
+    return JsonResponse({'token': token.values()})

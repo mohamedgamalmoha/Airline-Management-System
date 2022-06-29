@@ -8,7 +8,7 @@ from django.http.response import JsonResponse, HttpResponseForbidden
 
 from .decorators import auth_view
 from .models import Flight, Company, Country, Ticket
-from accounts.models import Customer, User, Administrator
+from accounts.models import Customer, User, Administrator, Token
 
 
 # Serializing Data As Json
@@ -123,7 +123,8 @@ def remove_ticket(request, ticket_id: int):
 
 @auth_view(method='GET')
 def get_my_tickets(request):
-    tickets = Ticket.objects.filter(customer__user__username=request.GET.get('username'))
+    token = get_object_or_404(Token, name=request.GET.get('token'))
+    tickets = Ticket.objects.filter(customer__user=token.user)
     data = serialize_queryset(tickets.values())
     return JsonResponse(data, safe=False)
 
@@ -137,7 +138,8 @@ def get_my_tickets(request):
 
 @auth_view(method='GET')
 def get_my_flights(request):
-    flights = Flight.objects.filter(company__manager__username=request.GET.get('username'))
+    token = get_object_or_404(Token, name=request.GET.get('token'))
+    flights = Flight.objects.filter(company__manager=token.user)
     data = serialize_queryset(flights.values())
     return JsonResponse(data, safe=False)
 
@@ -145,7 +147,8 @@ def get_my_flights(request):
 @auth_view(method='POST')
 def update_airline(request, airline: int):
     obj = get_object_or_404(Company, id=airline)
-    if obj.manager.username != request.POST.get('username'):
+    token = get_object_or_404(Token, name=request.POST.get('token'))
+    if obj.manager != token.user:
         return HttpResponseForbidden('You are not the owner of this company')
     obj.name = request.POST.get('name', obj.name)
     obj.country = get_object_or_404(Country, id=int(request.POST.get('country', obj.country.id)))
@@ -155,7 +158,8 @@ def update_airline(request, airline: int):
 
 @auth_view(method='POST')
 def add_flight(request):
-    customer = get_object_or_404(User, username=request.POST.get('username'))
+    token = get_object_or_404(Token, name=request.POST.get('token'))
+    customer = token.user
     flight = Flight()
     flight.company = customer.manager
     flight.origin = get_object_or_404(Country, id=int(request.POST.get('origin')))
@@ -169,9 +173,9 @@ def add_flight(request):
 
 @auth_view(method='POST')
 def update_flight(request, flight: int):
-    user = get_object_or_404(User, username=request.POST.get('username'))
+    token = get_object_or_404(Token, name=request.POST.get('token'))
     flight = get_object_or_404(Flight, id=flight)
-    if flight.company.manager != user:
+    if flight.company.manager != token.user:
         return HttpResponseForbidden('Your company is not the owner of this flight')
     flight.origin = get_object_or_404(Country, id=int(request.POST.get('origin', flight.origin.id)))
     flight.destination = get_object_or_404(Country, id=int(request.POST.get('destination', flight.destination.id)))
@@ -183,9 +187,9 @@ def update_flight(request, flight: int):
 
 @auth_view(method='POST')
 def remove_flight(request, flight: int):
-    user = get_object_or_404(User, username=request.POST.get('username'))
+    token = get_object_or_404(Token, name=request.POST.get('token'))
     obj = get_object_or_404(Flight, id=flight)
-    if obj.company.manager != user:
+    if obj.company.manager != token.user:
         return HttpResponseForbidden('Your company is not the owner of this flight')
     obj.delete()
     return JsonResponse({'message': 'Flight has been deleted Successfully'})
