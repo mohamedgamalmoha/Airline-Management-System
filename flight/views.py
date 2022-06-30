@@ -46,10 +46,8 @@ def get_flight_by_id(request, flight_id):
 
 
 def get_flights_by_parameters(request, origin_country_id: int, destination_country_id: int, date: str):
-    d, m, y = date.split('-')
-    objects = Flight.objects.get_flights_by_parameters(int(origin_country_id),
-                                                       int(destination_country_id),
-                                                       datetime(day=int(d), month=int(m), year=int(y))).values()
+    d = datetime.fromisoformat(date)
+    objects = Flight.objects.get_flights_by_parameters(int(origin_country_id), int(destination_country_id), d).values()
     data = serialize_queryset(objects)
     return JsonResponse(data, safe=False)
 
@@ -65,8 +63,8 @@ def get_airline_by_id(request, airline_id: int):
     return JsonResponse(data, safe=False)
 
 
-def get_airline_by_parameters(request, country_name: str):
-    objects = Company.objects.get_airline_by_parameters(country_name).values()
+def get_airline_by_parameters(request, company_name: str):
+    objects = Company.objects.get_airline_by_parameters(company_name).values()
     data = serialize_queryset(objects)
     return JsonResponse(data, safe=False)
 
@@ -117,6 +115,9 @@ def add_ticket(request):
 @auth_view(method='POST')
 def remove_ticket(request, ticket_id: int):
     obj = get_object_or_404(Ticket, id=ticket_id)
+    token = get_object_or_404(Token, name=request.POST.get('token'))
+    if obj.customer.user != token.user:
+        return HttpResponseForbidden('You are not the owner of this company')
     obj.delete()
     return JsonResponse({'message': 'Ticket has been deleted Successfully'})
 
@@ -166,7 +167,7 @@ def add_flight(request):
     flight.destination = get_object_or_404(Country, id=int(request.POST.get('destination')))
     flight.departure_time = datetime.fromisoformat(request.POST.get('departure_time'))
     flight.landing_time = datetime.fromisoformat(request.POST.get('landing_time'))
-    flight.num_of_tickets = request.POST.get('num_of_tickets', 10)
+    flight.num_of_tickets = int(request.POST.get('num_of_tickets', 10))
     flight.save()
     return JsonResponse({'message': 'Airline Company Has Updated Successfully'}, safe=False)
 
@@ -181,6 +182,7 @@ def update_flight(request, flight: int):
     flight.destination = get_object_or_404(Country, id=int(request.POST.get('destination', flight.destination.id)))
     flight.departure_time = datetime.fromisoformat(request.POST.get('departure_time', str(flight.departure_time)))
     flight.landing_time = datetime.fromisoformat(request.POST.get('landing_time', str(flight.landing_time)))
+    flight.num_of_tickets = int(request.POST.get('num_of_tickets', flight.num_of_tickets))
     flight.save()
     return JsonResponse({'message': 'Flight Has Updated Successfully'}, safe=False)
 
@@ -214,7 +216,7 @@ def get_all_customers(request):
 def add_airline(request):
     airline = Company()
     airline.name = request.POST.get('name')
-    airline.manager = get_object_or_404(User, username=request.POST.get('manger'))
+    airline.manager = get_object_or_404(User, username=request.POST.get('manager'))
     airline.country = get_object_or_404(Country, id=request.POST.get('country'))
     airline.save()
     return JsonResponse({'message': 'Airline Has Been Added Successfully'}, safe=False)

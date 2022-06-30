@@ -65,6 +65,8 @@ class Flight(models.Model):
         verbose_name_plural = 'Flights'
 
     def save(self, *args, **kwargs):
+        if self.num_of_tickets < 1:
+            raise ValidationError('Number of tickets cant be negative')
         if self.origin == self.destination:
             raise ValidationError('Origin country cant be same as destination country')
         if self.departure_time >= self.landing_time:

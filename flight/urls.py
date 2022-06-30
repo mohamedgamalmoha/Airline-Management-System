@@ -36,7 +36,7 @@ urlpatterns = [
     path('all-flights/', get_all_flights, name='all_flights'),
     path('flight-by-id/<int:flight_id>', get_flight_by_id, name='flight_by_id'),
     path('flight-by-parameters/<int:origin_country_id>/<int:destination_country_id>/<str:date>',
-         get_flights_by_parameters, name='flight_by_id'),
+         get_flights_by_parameters, name='flight_by_parameters'),
     path('all-airlines/', get_all_airlines, name='all_airlines'),
     path('airline-by-id/<int:airline_id>', get_airline_by_id, name='airline_by_id'),
     path('airlines-by-parameters/<str:company_name>', get_airline_by_parameters, name='airline_by_parameters'),

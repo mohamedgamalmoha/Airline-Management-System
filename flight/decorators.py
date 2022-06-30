@@ -27,7 +27,7 @@ def login(username, password):
 def login_with_token(token_name: str):
     token = Token.objects.filter(name=token_name)
     if token.exists():
-        return token.user
+        return token.first().user
     return None
 
 

@@ -42,5 +42,5 @@ class LogOutView(SuccessMessageMixin, LogoutView):
 
 def get_user_token(request):
     username, password = request.GET.get('username'), request.GET.get('password')
-    token = get_object_or_404(Token, user__username=username, user__passowrd=password)
-    return JsonResponse({'token': token.values()})
+    token = get_object_or_404(Token, user__username=username, user__password=password)
+    return JsonResponse({'token': token.name})
