@@ -2,8 +2,8 @@ import json
 from datetime import datetime
 
 from django.forms.models import model_to_dict
-from django.shortcuts import get_object_or_404
 from django.core.serializers.json import DjangoJSONEncoder
+from django.shortcuts import get_object_or_404, get_list_or_404
 from django.http.response import JsonResponse, HttpResponseForbidden
 
 from .decorators import auth_view
@@ -105,10 +105,10 @@ def update_customer(request, customer: int):
 
 @auth_view(method='POST')
 def add_ticket(request):
-    ticket = Ticket()
-    ticket.flight = get_object_or_404(Flight, id=int(request.POST.get('flight')))
-    ticket.customer = get_object_or_404(Customer, id=int(request.POST.get('customer')))
-    ticket.save()
+    Ticket.objects.create(
+        flight=get_object_or_404(Flight, id=int(request.POST.get('flight'))),
+        customer=get_object_or_404(Customer, id=int(request.POST.get('customer')))
+    )
     return JsonResponse({'message': 'Ticket has been created Successfully'})
 
 
@@ -161,14 +161,14 @@ def update_airline(request, airline: int):
 def add_flight(request):
     token = get_object_or_404(Token, name=request.POST.get('token'))
     customer = token.user
-    flight = Flight()
-    flight.company = customer.manager
-    flight.origin = get_object_or_404(Country, id=int(request.POST.get('origin')))
-    flight.destination = get_object_or_404(Country, id=int(request.POST.get('destination')))
-    flight.departure_time = datetime.fromisoformat(request.POST.get('departure_time'))
-    flight.landing_time = datetime.fromisoformat(request.POST.get('landing_time'))
-    flight.num_of_tickets = int(request.POST.get('num_of_tickets', 10))
-    flight.save()
+    Flight.objects.create(
+        company=customer.manager,
+        origin=get_object_or_404(Country, id=int(request.POST.get('origin'))),
+        destination=get_object_or_404(Country, id=int(request.POST.get('destination'))),
+        departure_time=datetime.fromisoformat(request.POST.get('departure_time')),
+        landing_time=datetime.fromisoformat(request.POST.get('landing_time')),
+        num_of_tickets=int(request.POST.get('num_of_tickets', 10))
+    )
     return JsonResponse({'message': 'Airline Company Has Updated Successfully'}, safe=False)
 
 
@@ -214,33 +214,34 @@ def get_all_customers(request):
 
 @auth_view(method='POST', allow_admin_only=True)
 def add_airline(request):
-    airline = Company()
-    airline.name = request.POST.get('name')
-    airline.manager = get_object_or_404(User, username=request.POST.get('manager'))
-    airline.country = get_object_or_404(Country, id=request.POST.get('country'))
-    airline.save()
+    Company.objects.create(
+        name=request.POST.get('name'),
+        manager=get_object_or_404(User, username=request.POST.get('manager')),
+        country=get_object_or_404(Country, id=request.POST.get('country'))
+    )
     return JsonResponse({'message': 'Airline Has Been Added Successfully'}, safe=False)
 
 
 @auth_view(method='POST', allow_admin_only=True)
 def add_customer(request):
-    customer = Customer()
-    customer.user = get_object_or_404(User, username=request.POST.get('user'))
-    customer.first_name = request.POST.get('first_name')
-    customer.last_name = request.POST.get('last_name')
-    customer.address = request.POST.get('address')
-    customer.phone_number = request.POST.get('phone_number')
-    customer.credit_card = request.POST.get('credit_card')
-    customer.save()
+    Customer.objects.create(
+        user=get_object_or_404(User, username=request.POST.get('user')),
+        first_name=request.POST.get('first_name'),
+        last_name=request.POST.get('last_name'),
+        address=request.POST.get('address'),
+        phone_number=request.POST.get('phone_number'),
+        credit_card=request.POST.get('credit_card')
+    )
     return JsonResponse({'message': 'Customer Has Been Added Successfully'}, safe=False)
 
 
 @auth_view(method='POST', allow_admin_only=True)
 def add_administrator(request):
-    administrator = Administrator()
-    administrator.user = get_object_or_404(User, username=request.POST.get('user'))
-    administrator.first_name = request.POST.get('first_name')
-    administrator.last_name = request.POST.get('last_name')
+    Administrator.objects.create(
+        user=get_object_or_404(User, username=request.POST.get('user')),
+        first_name=request.POST.get('first_name'),
+        last_name=request.POST.get('last_name')
+    )
     return JsonResponse({'message': 'Administrator Has Been Added Successfully'}, safe=False)
 
 
