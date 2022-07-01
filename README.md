@@ -1,10 +1,12 @@
 # Airline-Management-System
 API end points for CRUD operations  
+A flight management system that allows airlines to manage their system
+
 ## The following requirements are specified 
-- Function generate_1d_matrix
-- Take min and max values of x from the user.
-- The following operators is supported: + - / * ^.- 
-- The GUI is simple and beautiful (well organized).
+- Advertise flights and customers choose Airline Companies 
+- REST API Interface
+- Business Logics Layer
+- Database The system will include a database
 
 ## How to run the program correctly 
 - Install python (in case it was not installed) 
@@ -21,4 +23,8 @@ API end points for CRUD operations
     ```
     python manage.py default_superuser
     python manage.py upload_data
+    ```
+- Run the server
+    ```
+    python manage.py runserver
     ```
