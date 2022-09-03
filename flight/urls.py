@@ -26,6 +26,12 @@ from .views import (
     remove_airline,
     remove_customer,
     remove_administrator,
+
+    # Custom Views
+    SearchFlightView,
+    CreateTicketView,
+    UpdateTicketStatusView,
+    TicketListView
     )
 
 
@@ -58,11 +64,16 @@ urlpatterns = [
 
     # Admin Facade
     path('all-customers', get_all_customers, name='all_customers'),
-
     path('add-airline', add_airline, name='add_airline'),
     path('add_customer', add_customer, name='add_customer'),
     path('add-administrator', add_administrator, name='add_administrator'),
     path('remove_airline/<int:airline>', remove_airline, name='remove_airline'),
     path('remove_customer/<int:customer>', remove_customer, name='remove_customer'),
     path('remove_administrator/<int:administrator>', remove_administrator, name='remove_administrator'),
+
+    # Views
+    path('search/', SearchFlightView.as_view(), name='search_flight'),
+    path('ticket/create/<int:pk>', CreateTicketView.as_view(), name='create_ticket'),
+    path('ticket/update/<int:pk>', UpdateTicketStatusView.as_view(), name='update_status_ticket'),
+    path('ticket/list/', TicketListView.as_view(), name='list_ticket'),
 ]

@@ -13,7 +13,8 @@ class TicketInlineAdmin(admin.TabularInline):
 
 
 class FlightAdmin(admin.ModelAdmin):
-    list_display = ('company', 'origin', 'destination', 'departure_time', 'landing_time', 'num_of_tickets', 'count_receive_rickets')
+    list_display = ('company', 'origin', 'destination', 'departure_time', 'landing_time', 'num_of_tickets', 'price',
+                    'count_receive_rickets')
     readonly_fields = ('count_receive_rickets', )
     search_fields = ('company__name', 'origin__name', 'destination__name')
     search_help_text = 'You can search by company name, origin country and destination country'
@@ -23,7 +24,7 @@ class FlightAdmin(admin.ModelAdmin):
 
 
 class TicketAdmin(admin.ModelAdmin):
-    list_display = ('flight', 'customer')
+    list_display = ('flight', 'customer', 'status')
 
 
 admin.site.register(Country)

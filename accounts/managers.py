@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import UserManager
 
 
 class CustomerManager(models.Manager):
@@ -7,6 +8,6 @@ class CustomerManager(models.Manager):
         return self.get(user__username=username)
 
 
-class UserManager(models.Manager):
+class CustomUserManager(UserManager):
     def get_user_by_username(self, username: str):
         return self.get(username=username)

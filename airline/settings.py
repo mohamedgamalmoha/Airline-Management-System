@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    # Third party apps
+    'django_filters',
     # Custom Apps
     'accounts',
     'flight'
@@ -138,3 +140,4 @@ STATICFILES_DIRS = [STATIC_DIR, ]
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LOGIN_REDIRECT_URL = '/'
+AUTH_USER_MODEL = "accounts.User"

@@ -15,13 +15,15 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.views.i18n import JavaScriptCatalog
+
 from .views import home
 
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('jsi18n', JavaScriptCatalog.as_view(), name='js-catalog'),
     path('', home, name='home'),
     path('accounts/', include('accounts.urls', namespace='accounts')),
     path('flight/', include('flight.urls', namespace='flight'))
-
 ]

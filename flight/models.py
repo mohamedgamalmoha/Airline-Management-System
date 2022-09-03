@@ -6,6 +6,11 @@ from accounts.models import User, Customer
 from .managers import CompanyManager, FlightManager, TicketsManager
 
 
+class TicketStatus(models.TextChoices):
+    Booked = "Booked", "Booked"
+    Canceled = "Canceled", "Canceled"
+
+
 class Country(models.Model):
     name = models.CharField(max_length=50)
 
@@ -53,10 +58,11 @@ class Flight(models.Model):
     departure_time = models.DateTimeField()
     landing_time = models.DateTimeField()
 
+    price = models.DecimalField(null=True, decimal_places=2, max_digits=10)
+    num_of_tickets = models.PositiveIntegerField(validators=[MinValueValidator(1), ])
+
     created = models.DateTimeField(auto_now=True)
     modified = models.DateTimeField(auto_now_add=True)
-
-    num_of_tickets = models.PositiveIntegerField(validators=[MinValueValidator(1), ])
 
     objects = FlightManager()
 
@@ -88,6 +94,7 @@ class Flight(models.Model):
 class Ticket(models.Model):
     flight = models.ForeignKey(Flight, on_delete=models.SET_NULL, null=True)
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True)
+    status = models.CharField(max_length=50, choices=TicketStatus.choices, default=TicketStatus.Booked)
 
     objects = TicketsManager()
 

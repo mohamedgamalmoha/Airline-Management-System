@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %} {{ title }} {% endblock %}
+
+
+{% block content %}
+{% include 'base/admin_style.html' %}
+    <form method="GET" class="contact-form" style="width:65%; align:center; margin: 35px auto 0;">
+        <h4 style="text-align:center;">{{ title }}</h4>
+        {{ filterset.form.media }}
+        {{ filterset.form }}
+        <button class="btn btn-dark btn-lg" id="submitButton" type="submit" style="right: 0; margin: 10px;">Search</button>
+    </form>
+    {% if filterset.qs %}
+    <table class="table table-striped" style="margin: 0 auto; width: 80%">
+        <thead>
+        <tr>
+            <th scope="col">#</th>
+            <th scope="col">Company</th>
+            <th scope="col">Origin</th>
+            <th scope="col">Destination</th>
+            <th scope="col">Departure Time</th>
+            <th scope="col">Landing Time</th>
+            <th scope="col">Price</th>
+            <th scope="col">Link</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for flight in filterset.qs %}
+        <tr>
+            <th scope="row">{{ forloop.counter }}</th>
+            <td>{{ flight.company }}</td>
+            <td>{{ flight.origin }}</td>
+            <td>{{ flight.destination }}</td>
+            <td>{{ flight.departure_time }}</td>
+            <td>{{ flight.landing_time }}</td>
+            <td>{{ flight.price }}</td>
+            <td><a href="{% url  'flight:create_ticket' flight.pk %}"> Book</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+{% endblock %}

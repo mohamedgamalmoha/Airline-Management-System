@@ -49,6 +49,10 @@ class FlightManager(models.Manager):
     def get_flights_by_customer(self, customer):
         return self.filter(flight__customer=customer)
 
+    def available(self):
+        data = timezone.now()
+        return self.filter(departure_time__gte=data)
+
 
 class TicketsManager(models.Manager):
 

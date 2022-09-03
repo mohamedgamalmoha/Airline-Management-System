@@ -1,12 +1,18 @@
 import json
 from datetime import datetime
 
+from django.contrib import messages
+from django.urls import reverse_lazy
 from django.forms.models import model_to_dict
+from django.views.generic.list import ListView
+from django.views.generic.edit import UpdateView
+from django.views.generic.detail import DetailView
+from django.shortcuts import redirect, get_object_or_404
 from django.core.serializers.json import DjangoJSONEncoder
-from django.shortcuts import get_object_or_404, get_list_or_404
 from django.http.response import JsonResponse, HttpResponseForbidden
 
-from .decorators import auth_view
+from .decorators import auth_view, CustomerRequired
+from .forms import FlightFilter, TicketStatusUpdateForm
 from .models import Flight, Company, Country, Ticket
 from accounts.models import Customer, User, Administrator, Token
 
@@ -264,3 +270,65 @@ def remove_administrator(request, administrator: int):
     obj = get_object_or_404(Administrator, id=administrator)
     obj.delete()
     return JsonResponse({'message': 'Administrator has been deleted Successfully'})
+
+
+class SearchFlightView(ListView):
+    model = Flight
+    filterset_class = FlightFilter
+    template_name = "flight/search.html"
+
+    def get_filterset_class(self):
+        return self.filterset_class
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        filterset = self.get_filterset_class()
+        self.filterset = filterset(self.request.GET, queryset=queryset)
+        return self.filterset.qs.distinct()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['filterset'] = self.filterset
+        return context
+
+
+class CreateTicketView(CustomerRequired, DetailView):
+    model = Flight
+    context_object_name = "flight"
+    template_name = "flight/create.html"
+    success_url = reverse_lazy("flight:list_ticket")
+    success_message = "Ticket has been booked Successfully "
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        flight = self.get_object()
+        Ticket.objects.create(
+            customer=user.customer,
+            flight=flight
+        )
+        success_message = self.get_success_message()
+        messages.success(self.request, success_message)
+        return redirect(self.success_url)
+
+    def get_success_message(self):
+        return self.success_message
+
+
+class UpdateTicketStatusView(CustomerRequired, UpdateView):
+    model = Ticket
+    form_class = TicketStatusUpdateForm
+    template_name = "flight/update.html"
+    success_url = reverse_lazy("flight:list_ticket")
+    success_message = "Ticket has been updated successfully"
+    extra_context = {
+        "title": "Update Ticket"
+    }
+
+
+class TicketListView(CustomerRequired, ListView):
+    model = Ticket
+    context_object_name = "tickets"
+    template_name = "flight/list.html"
+
+    def get_queryset(self):
+        return self.model.objects.filter(customer=self.request.user.customer)

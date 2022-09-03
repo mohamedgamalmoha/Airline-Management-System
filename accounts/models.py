@@ -3,11 +3,12 @@ import binascii
 
 from django.db import models
 from django.utils.text import slugify
+from django.core.validators import RegexValidator
 from django.core.exceptions import ValidationError
+from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.validators import UnicodeUsernameValidator
-from django.core.validators import RegexValidator, MinLengthValidator
 
-from .managers import UserManager, CustomerManager
+from .managers import CustomUserManager, CustomerManager
 
 
 PhoneNumberValidator = RegexValidator(r'^[0-9]{10}$', 'Invalid Phone Number')
@@ -41,7 +42,7 @@ class UserRole(models.Model):
         super().save(*args, **kwargs)
 
 
-class User(models.Model):
+class User(AbstractUser):
     username = models.CharField(
         max_length=150,
         unique=True,
@@ -51,19 +52,20 @@ class User(models.Model):
             "unique": "A user with that username already exists.",
         },
     )
-    password = models.CharField("Password", max_length=128, validators=[NumericValidator,
-                                                                        MinLengthValidator(6)])
     email = models.EmailField("Email Address", blank=True)
-    role = models.ForeignKey(UserRole, on_delete=models.SET_NULL, null=True)
+    role = models.ForeignKey(UserRole, on_delete=models.PROTECT, null=True, blank=True, db_constraint=False)
 
-    objects = UserManager()
+    objects = CustomUserManager()
+
+    class Meta(AbstractUser.Meta):
+        swappable = "AUTH_USER_MODEL"
 
     def __str__(self):
         return self.username
 
 
 class Customer(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="customer")
     first_name = models.CharField("First Name", max_length=150, blank=True)
     last_name = models.CharField("Last Name", max_length=150, blank=True)
     address = models.CharField("Address", max_length=150, blank=True)

@@ -1,9 +1,10 @@
 from typing import Callable
 from functools import wraps, partial
 
+from django.contrib.auth.mixins import AccessMixin
 from django.http.response import HttpResponseBadRequest
 
-from accounts.models import User, Administrator, Token
+from accounts.models import User, Customer, Administrator, Token
 
 
 VALID_HTTP_METHODS = ('GET', 'POST', 'PUT', 'DELETE')
@@ -65,3 +66,12 @@ def auth_view(view_func: Callable = None, method: str = None, messages: dict = N
         return HttpResponseBadRequest(messages.get('invalid_info_message'))
 
     return wrapper_func
+
+
+class CustomerRequired(AccessMixin):
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            customer = Customer.objects.filter(user=request.user)
+            if customer.exists():
+                return super().dispatch(request, *args, **kwargs)
+        return self.handle_no_permission()
