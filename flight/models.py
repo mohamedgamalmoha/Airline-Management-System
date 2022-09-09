@@ -66,6 +66,9 @@ class Flight(models.Model):
 
     objects = FlightManager()
 
+    def __str__(self):
+        return f"From {self.origin.name} to {self.destination.name}"
+
     class Meta:
         verbose_name = 'Flights'
         verbose_name_plural = 'Flights'
@@ -93,7 +96,7 @@ class Flight(models.Model):
 
 class Ticket(models.Model):
     flight = models.ForeignKey(Flight, on_delete=models.SET_NULL, null=True)
-    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True)
+    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, related_name="tickets")
     status = models.CharField(max_length=50, choices=TicketStatus.choices, default=TicketStatus.Booked)
 
     objects = TicketsManager()

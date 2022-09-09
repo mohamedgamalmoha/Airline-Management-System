@@ -299,15 +299,33 @@ class CreateTicketView(CustomerRequired, DetailView):
     success_url = reverse_lazy("flight:list_ticket")
     success_message = "Ticket has been booked Successfully "
 
+    def dispatch(self, request, *args, **kwargs):
+        obj = self.get_object()
+        customer_ticket = Ticket.objects.filter(customer__user=request.user, flight=obj)
+        if customer_ticket.exists():
+            messages.error(request, "You have already booked this ticket")
+            return redirect("flight:search_flight")
+        return super(CreateTicketView, self).dispatch(request, *args, **kwargs)
+
     def post(self, request, *args, **kwargs):
         user = request.user
+        customer = Customer.objects.get(user=user)
+        customer.credit_card = request.POST.get('credit_card')
+        customer.save()
+
         flight = self.get_object()
-        Ticket.objects.create(
-            customer=user.customer,
-            flight=flight
-        )
-        success_message = self.get_success_message()
-        messages.success(self.request, success_message)
+        count = flight.ticket_set.count()
+        if flight.num_of_tickets > count:
+            Ticket.objects.create(
+                customer=user.customer,
+                flight=flight
+            )
+            success_message = self.get_success_message()
+            messages.success(self.request, success_message)
+        else:
+            messages.error(request, "Number of tickets exceed the limit")
+            return redirect("flight:search_flight")
+
         return redirect(self.success_url)
 
     def get_success_message(self):

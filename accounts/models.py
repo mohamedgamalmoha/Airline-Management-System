@@ -2,6 +2,8 @@ import os
 import binascii
 
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.utils.text import slugify
 from django.core.validators import RegexValidator
 from django.core.exceptions import ValidationError
@@ -12,7 +14,7 @@ from .managers import CustomUserManager, CustomerManager
 
 
 PhoneNumberValidator = RegexValidator(r'^[0-9]{10}$', 'Invalid Phone Number')
-CreditCardValidator = RegexValidator(r'^[0-9]{15}$', 'Invalid Credit Card')
+CreditCardValidator = RegexValidator(r'^[0-9]{16}$', 'Invalid Credit Card')
 
 
 class NumericValidator:
@@ -110,3 +112,17 @@ class Token(models.Model):
     @property
     def username(self):
         return self.user.username
+
+# booking twice               | T |
+# auto generation token       | T |
+# credit card while booking   | T |
+# max number of tickets       | T |
+# upload on server            | F |
+
+
+@receiver(post_save, sender=User)
+def create_token(sender, instance, created, **kwargs):
+    if created:
+        Token.objects.create(
+            user=instance
+        )
